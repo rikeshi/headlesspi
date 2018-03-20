@@ -86,14 +86,13 @@ done
 echo "Password hashed."
 
 
-# Create a temporary directory.
-while true; do
-  directory="/tmp/rpisetup.$(head /dev/urandom | tr -dc [:alnum:] | head -c 6)"
-  if [ ! -d "$directory" ]; then
-    mkdir "$directory" && cd "$directory"
-    break
-  fi
-done
+# Create temporary directory.
+directory=$(find /tmp/rpisetup.* 2> /dev/null)
+if [ -z "$directory" ] || [ $(stat -c %U $directory) != "root" ]; then
+    directory="/tmp/rpisetup.$(head /dev/urandom | tr -dc [:alnum:] | head -c 16)"
+    mkdir "$directory"
+    cd "$directory"
+fi
 echo "Working in temporary directory: $directory"
 
 
@@ -215,11 +214,6 @@ umount boot root
 # Disable journaling for the root partition.
 tune2fs -O ^has_journal /dev/mmcblk0p2 > /dev/null
 echo "Disabled journaling for the root parition."
-
-
-# Remove the temporary directory.
-rm -r "$directory"
-echo "Removed working directory: $directory"
 
 
 # Notify and exit.
