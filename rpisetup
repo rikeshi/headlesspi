@@ -87,12 +87,12 @@ echo "Password hashed."
 
 
 # Create temporary directory.
-directory=$(find /tmp/rpisetup.* 2> /dev/null)
-if [ -z "$directory" ] || [ $(stat -c %U $directory) != "root" ]; then
+directory=$(find /tmp/rpisetup.* -maxdepth 0 2> /dev/null)
+if [ -z "$directory" ] || [ "$(stat -c %U $directory)" != "root" ]; then
     directory="/tmp/rpisetup.$(head /dev/urandom | tr -dc [:alnum:] | head -c 16)"
     mkdir "$directory"
-    cd "$directory"
 fi
+cd "$directory"
 echo "Working in temporary directory: $directory"
 
 
@@ -103,6 +103,10 @@ while read -r line; do
     umount "${words[1]}" || { echo "Error while unmounting"; exit 1; }
   fi
 done < /etc/mtab
+
+
+# Remove filesytem signatures.
+wipefs --quiet --force --all /dev/mmcblk0 > /dev/null
 
 
 # Partition the device.
@@ -127,21 +131,21 @@ echo "SD card partitioned."
 
 # Create and mount the FAT filesystem.
 mkfs.vfat /dev/mmcblk0p1 &> /dev/null
-mkdir boot
+if [ ! -d boot ]; then mkdir boot; fi
 mount /dev/mmcblk0p1 boot
 
 
 # Create and mount the ext4 filesystem.
 mkfs.ext4 /dev/mmcblk0p2 &> /dev/null
-mkdir root
+if [ ! -d root ]; then mkdir root; fi
 mount /dev/mmcblk0p2 root
 echo "Created and mounted filesystems."
 
 
 # Download the archive if it is not already available.
+url="http://os.archlinuxarm.org/os/ArchLinuxARM-rpi-latest.tar.gz"
 if [ ! -e $(basename $url) ]; then
   echo "Downloading Arch Linux ARM..."
-  url="http://os.archlinuxarm.org/os/ArchLinuxARM-rpi-latest.tar.gz"
   wget -q $url || { echo "Error while downloading Arch Linux ARM."; exit 1; }
 fi
 
@@ -152,7 +156,7 @@ bsdtar -xpf $(basename $url) -C root > /dev/null || { echo "Unpacking failed."; 
 sync
 
 
-# Move the boot files to the first parition.
+# Move the boot files to the first partition.
 mv root/boot/* boot
 
 
@@ -208,7 +212,8 @@ echo "Disabled journalctl logging."
 
 
 # Unmount the two partitions.
-umount boot root
+umount boot
+umount root
 
 
 # Disable journaling for the root partition.
