@@ -59,16 +59,29 @@ fi
 
 # Get network information from the user.
 while true; do
-
   echo "Enter network name:"
-  read -r essid
+  read -e essid
   echo "Enter network password:"
-  read -rs key
+  # https://stackoverflow.com/questions/1923435
+  stty -echo
+  while IFS= read -p "$prompt" -rn 1 char; do
+    if [[ $char == $'\0' ]] ; then break; fi
+    if [[ $char == $'\b' ]] ; then
+      if [ -n "$key" ] ; then
+        prompt=$'\b \b'
+        key="${key%?}"
+      else prompt=''; fi
+    else
+      prompt='*'
+      key+="$char"
+    fi
+  done
+  stty echo
+  echo
   printf "All set? [y/N] "
   read -rn 1 answer
   echo
   if [ "$answer" = "y" ]; then break; fi
-
 done
 
 # Generate the hash.
