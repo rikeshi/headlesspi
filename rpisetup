@@ -15,54 +15,47 @@
 
 # Check for the install flag.
 if [ "$1" != "--install" ]; then
-
+  echo "Usage: $0 --install"
   echo
-  echo " Usage: $0 --install"
+  echo "Arch install script for Raspberry Pi 1 Model A."
+  echo "It preconfigures the Pi for easy headless setup over Wi-Fi."
   echo
-  echo " Arch install script for Raspberry Pi 1 Model A."
-  echo " It preconfigures the Pi for easy headless setup over Wi-Fi."
+  echo "This script assumes a network with WPA encryption."
+  echo "The hash requires a key with 8-63 characters."
   echo
-  echo " This script assumes a network with WPA encryption."
-  echo " The hash requires a key with 8-63 characters."
-  echo
-  echo " The script's target is hard coded to '/dev/mmcblk0'."
-  echo " This is a safety measure against overwriting the wrong drive."
-  echo " Run 'dmesg' to verify that mmcblk0 is the inserted SD card."
-  echo
+  echo "The script's target is hard coded to '/dev/mmcblk0'."
+  echo "This is a safety measure against overwriting the wrong drive."
+  echo "Run 'dmesg' to verify that mmcblk0 is the inserted SD card."
   exit 1
-
 fi
 
+
 # Check dependencies.
-wpa_passphrase &> /dev/null
-if [ $? -eq 127 ]; then exit 1; fi
-mkfs.vfat      &> /dev/null
-if [ $? -eq 127 ]; then exit 1; fi
+type -t wpa_passphrase > /dev/null || { echo "Missing wpa_supplicant."; exit 1; }
+type -t mkfs.vfat      > /dev/null || { echo "Missing mkfs.vfat."     ; exit 1; }
+
 
 # Check if we have root priviliges
 if [ "$(whoami)" != "root" ]; then
-
   echo "Error while checking security priviliges."
   echo "Make sure to run the script with 'sudo'."
   exit 1
-
 fi
+
 
 # Check if the Multi-Media Card BLOCK device exists.
 if [ ! -e "/dev/mmcblk0" ]; then
-
   echo "Error while looking for '/dev/mmcblk0'."
   echo "Make sure an SD card is inserted."
   exit 1
-
 fi
+
 
 # Get network information from the user.
 while true; do
   echo "Enter network name:"
   read -e essid
   echo "Enter network password:"
-  # https://stackoverflow.com/questions/1923435
   stty -echo
   while IFS= read -p "$prompt" -rn 1 char; do
     if [[ $char == $'\0' ]] ; then break; fi
@@ -84,40 +77,37 @@ while true; do
   if [ "$answer" = "y" ]; then break; fi
 done
 
+
 # Generate the hash.
-for line in $(wpa_passphrase "$essid" "$key"); do
-
-  if [ $? -ne 0 ]; then echo "Password hashing failed."; exit 1; fi
+hash=$(wpa_passphrase "$essid" "$key") || { echo "Password hashing failed."; exit 1; }
+for line in $hash; do
   if [[ "$line" =~ ^psk ]]; then hash="${line:4}"; break; fi
-
 done
 echo "Password hashed."
 
+
 # Create a temporary directory.
 while true; do
-
   directory="/tmp/rpisetup.$(head /dev/urandom | tr -dc [:alnum:] | head -c 6)"
-
   if [ ! -d "$directory" ]; then
     mkdir "$directory" && cd "$directory"
     break
   fi
-
 done
 echo "Working in temporary directory: $directory"
 
+
 # Unmount the device's partitions.
 while read -r line; do
-
   words=($line)
-  if [[ "${words[0]}" =~ ^/dev/mmcblk0 ]]; then umount "${words[1]}"; fi
-  if [ $? -ne 0 ]; then echo "Error while unmounting."; exit 1; fi
-
+  if [[ "${words[0]}" =~ ^/dev/mmcblk0 ]]; then
+    umount "${words[1]}" || { echo "Error while unmounting"; exit 1; }
+  fi
 done < /etc/mtab
+
 
 # Partition the device.
 {
-
   echo "o"
   echo "n"
   echo "p"
@@ -132,45 +122,43 @@ done < /etc/mtab
   echo
   echo
   echo "w"
+} | fdisk /dev/mmcblk0 > /dev/null || { echo "Partitioning failed."; exit 1; }
+echo "SD card partitioned."
 
-} | fdisk /dev/mmcblk0 > /dev/null
-if [ $? -ne 0 ]; then echo "Partitioning failed."; exit 1; fi
-echo "Device partitioned."
 
 # Create and mount the FAT filesystem.
 mkfs.vfat /dev/mmcblk0p1 &> /dev/null
 mkdir boot
 mount /dev/mmcblk0p1 boot
 
+
 # Create and mount the ext4 filesystem.
-mkfs.ext4 /dev/mmcblk0p2 > /dev/null
+mkfs.ext4 /dev/mmcblk0p2 &> /dev/null
 mkdir root
 mount /dev/mmcblk0p2 root
+echo "Created and mounted filesystems."
 
-# Download and extract the root filesystem.
-if [ ! -e "ArchLinuxARM-rpi-latest.tar.gz" ]; then
 
+# Download the archive if it is not already available.
+if [ ! -e $(basename $url) ]; then
   echo "Downloading Arch Linux ARM..."
-  wget -q http://os.archlinuxarm.org/os/ArchLinuxARM-rpi-latest.tar.gz
-
-  if [ $? -ne 0 ]; then
-    echo "Error while downloading Arch Linux ARM."
-    exit 1
-  fi
-
+  url="http://os.archlinuxarm.org/os/ArchLinuxARM-rpi-latest.tar.gz"
+  wget -q $url || { echo "Error while downloading Arch Linux ARM."; exit 1; }
 fi
 
+
+# Unpack the archive.
 echo "Unpacking the root filesystem..."
-bsdtar -xpf ArchLinuxARM-rpi-latest.tar.gz -C root > /dev/null
-if [ $? -ne 0 ]; then echo "Unpacked failed."; exit 1; fi
+bsdtar -xpf $(basename $url) -C root > /dev/null || { echo "Unpacking failed."; exit 1; }
 sync
+
 
 # Move the boot files to the first parition.
 mv root/boot/* boot
 
+
 # Overwrite the filesystem table.
 {
-
   echo "#"
   echo "# /etc/fstab: static file system information"
   echo "#"
@@ -183,57 +171,56 @@ mv root/boot/* boot
   echo "# Temporary partitions"
   echo "tmpfs /tmp     tmpfs defaults,noatime,nodiratime,nosuid,nodev,noexec,size=10M 0 0"
   echo "tmpfs /var/log tmpfs defaults,noatime,nodiratime,nosuid,nodev,noexec,size=10M 0 0"
-
 } > root/etc/fstab
 echo "File system table written."
 
+
 # Create the netctl profile.
 while read -r line; do
-
   if   [[ "$line" =~ ESSID ]]; then line="ESSID='$essid'"
   elif [[ "$line" =~ Key   ]]; then line="Key=\\\"$hash" ; fi
   echo "$line"
-
 done < root/etc/netctl/examples/wireless-wpa \
      > root/etc/netctl/wlan
 echo "Wifi profile created: 'wlan'."
 
+
 # Enable the netctl profile.
 {
-
   echo ".include /usr/lib/systemd/system/netctl@.service"
   echo
   echo "[Unit]"
   echo "Description=A simple WPA encrypted wireless connection"
   echo "BindsTo=sys-subsystem-net-devices-wlan0.device"
   echo "After=sys-subsystem-net-devices-wlan0.device"
-
 } > 'root/etc/systemd/system/netctl@wlan.service'
-
 ln -s 'root/etc/systemd/system/netctl@wlan.service' \
       'root/etc/systemd/system/multi-user.target.wants/netctl@wlan.service'
 echo "Wi-Fi profile enabled."
 
+
 # Disable journalctl logging.
 while read -r line; do
-
   if [[ "$line" =~ Storage ]]; then line="Storage=none"; fi
   echo "$line"
-
 done < root/etc/systemd/journald.conf \
      > tmp && mv tmp root/etc/systemd/journald.conf
 echo "Disabled journalctl logging."
 
+
 # Unmount the two partitions.
 umount boot root
+
 
 # Disable journaling for the root partition.
 tune2fs -O ^has_journal /dev/mmcblk0p2 > /dev/null
 echo "Disabled journaling for the root parition."
 
+
 # Remove the temporary directory.
 rm -r "$directory"
 echo "Removed working directory: $directory"
+
 
 # Notify and exit.
 echo "The installation was completed successfully."
