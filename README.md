@@ -18,11 +18,11 @@ as `/dev/mmcblk0`. This is the device that the script will target.
 
 3. Open a terminal and check all the IPs on your LAN with `nmap -sn 192.168.0.1/24`.
 Your router address might not be `192.168.0.1`.
-You can find out what it is with `ip route show | grep -i 'default via'| awk '{print $3 }'`.
+You can find out what it is with `ip route show | grep -i 'default via' | awk '{print $3 }'`.
 
 3. Power on the Pi with the prepared SD card. Give it a little time to boot.
 
 4. Run `nmap` again and it there should be a new IP listed.
-This is the IP of the Raspberry Pi.
+This is the IP address of the Raspberry Pi.
 
 5. Connect to the Pi with `ssh alarm@<IP>` and log in using the default password `alarm`.
