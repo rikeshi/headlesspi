@@ -2,7 +2,7 @@
 
 This is a simple bash script that installs Arch Linux ARM onto an SD card
 and sets it up to automatically connect to a user-specified Wi-Fi profile once the Raspberry Pi is powered on.
-This allows easy headlesss setup of the Pi Model A, which lacks an ethernet port.
+This allows easy headless setup of the Pi Model A, which lacks an ethernet port.
 
 The basic Arch Linux ARM installation steps are outlined here: https://archlinuxarm.org/platforms/armv6/raspberry-pi
 
@@ -15,6 +15,7 @@ Root priviliges are required.
 as `/dev/mmcblk0`. This is the device that the script will target.
 
 2. Run the script with `sudo ./rpisetup --install`.
+The downloading and archive unpacking steps can take a while.
 
 3. Open a terminal and check all the IPs on your LAN with `nmap -sn 192.168.0.1/24`.
 Your router address might not be `192.168.0.1`.
