@@ -182,8 +182,8 @@ echo "HDMI port configured to be disabled on boot."
   echo "# <file system> <dir> <type> <options> <dump> <pass>"
   echo
   echo "# System partitions"
-  echo "/dev/mmcblk0p1 /boot vfat defaults                   0 0"
-  echo "/dev/mmcblk0p2 /     ext4 noatime,nodiratime,discard 0 1"
+  echo "/dev/mmcblk0p1 /boot vfat defaults           0 0"
+  echo "/dev/mmcblk0p2 /     ext4 noatime,nodiratime 0 1"
   echo
   echo "# Temporary partitions"
   echo "tmpfs /tmp     tmpfs rw,nosuid,nodev,noatime,nodiratime,size=64M 0 0"
