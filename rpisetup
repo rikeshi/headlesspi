@@ -3,13 +3,9 @@
 # This script automates the installation outlined on:
 # https://archlinuxarm.org/platforms/armv6/raspberry-pi
 #
-# It preconfigures the Pi for easy headless setup over Wi-Fi.
-# Root privileges are required.
-# Use at your own risk.
-#
-# Arch dependencies:
+# Arch Linux dependencies:
 #   - wpa_supplicant (for wpa_passphrase)
-#   - dosfstools (for mkfs.vfat)
+#   - dosfstools     (for mkfs.vfat)
 #
 
 
@@ -187,8 +183,8 @@ echo "HDMI port configured to be disabled on boot."
   echo
   echo "# Temporary partitions"
   echo "tmpfs /tmp     tmpfs rw,nosuid,nodev,noatime,nodiratime,size=64M 0 0"
-  echo "tmpfs /var/tmp tmpfs rw,nosuid,nodev,noatime,nodiratime,size=1M 0 0"
-  echo "tmpfs /var/log tmpfs rw,nosuid,nodev,noatime,nodiratime,size=1M 0 0"
+  echo "tmpfs /var/tmp tmpfs rw,nosuid,nodev,noatime,nodiratime,size=1M  0 0"
+  echo "tmpfs /var/log tmpfs rw,nosuid,nodev,noatime,nodiratime,size=1M  0 0"
 } > root/etc/fstab
 echo "File system table written."
 

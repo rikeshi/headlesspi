@@ -10,7 +10,7 @@ The basic Arch Linux ARM installation steps are outlined here: https://archlinux
 Warning! The script will overwrite your SD card.
 Root priviliges are required.
 
-## How to use
+## Usage
 
 1. Insert your SD card into your computer. Use `dmesg` to verify that it was detected
 as `/dev/mmcblk0`. This is the device that the script will target.
@@ -28,3 +28,10 @@ You can find out what it is with `ip route show default | awk '{ print $3 }'`.
 This is the IP address of the Raspberry Pi.
 
 5. Connect to the Pi with `ssh alarm@<IP>` and log in using the default password `alarm`.
+
+## Dependencies
+
+- mkfs.vfat
+- wpa_passphrase
+
+Install these with your package manager if they are missing.
