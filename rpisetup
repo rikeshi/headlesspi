@@ -142,7 +142,7 @@ echo "Created and mounted filesystems."
 url="http://os.archlinuxarm.org/os/ArchLinuxARM-rpi-latest.tar.gz"
 if [ ! -e $(basename $url) ]; then
   echo "Downloading Arch Linux ARM..."
-  wget -q $url || { echo "Error while downloading Arch Linux ARM."; exit 1; }
+  curl -sLO $url || { echo "Error while downloading Arch Linux ARM."; exit 1; }
 fi
 
 
