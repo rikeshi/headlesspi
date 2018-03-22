@@ -160,6 +160,10 @@ sync
 mv root/boot/* boot
 
 
+# Allocate only 16MB to the GPU.
+echo "gpu_mem=16" > boot/config.txt
+
+
 # Turn off the HDMI port to save power during headless operation.
 {
   echo "# Disable HDMI"
